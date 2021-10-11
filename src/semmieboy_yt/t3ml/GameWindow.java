@@ -28,7 +28,7 @@ public class GameWindow extends JFrame {
                 int smallSize = size / 3;
                 int selectionX = (event.getX() - x) / smallSize, selectionY = (event.getY() - y) / smallSize;
                 if ((selectionX >= 0 && selectionX < 3) && (selectionY >= 0 && selectionY < 3)) {
-                    Main.onMove(selectionY * 3 + selectionX);
+                    Main.onMove(Main.positionToIndex(selectionX, selectionY));
                 }
             }
         });
@@ -66,14 +66,14 @@ public class GameWindow extends JFrame {
         byte shapeX = 0, shapeY = 0;
         int shapeMargin = 20;
         int shapeSize = squareSize - shapeMargin * 2;
-        for (int i = 0; i < Main.BOARD.length; i++) {
-            switch (Main.BOARD[i]) {
-                case Main.CROSS -> {
+        for (int i = 0; i < Main.board.length; i++) {
+            switch (Main.board[i]) {
+                case Main.cross -> {
                     int crossX = shapeX * squareSize + shapeMargin, crossY = shapeY * squareSize + shapeMargin;
                     graphics.drawLine(crossX, crossY, crossX + shapeSize, crossY + shapeSize);
                     graphics.drawLine(crossX + shapeSize, crossY, crossX, crossY + shapeSize);
                 }
-                case Main.CIRCLE -> {
+                case Main.circle -> {
                     int circleX = shapeX * squareSize + shapeMargin, circleY = shapeY * squareSize + shapeMargin;
                     graphics.drawOval(circleX, circleY, shapeSize, shapeSize);
                 }

@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -15,9 +17,9 @@ public class Brain {
 
     private static final ArrayList<Memory> memories = new ArrayList<>();
     private static final File saveFile = new File("brain.dat");
+    private static final Random random = new Random();
 
     public static void debug() {
-        Random random = new Random();
         byte[] board = new byte[9];
         byte[] square = new byte[1];
         for (int i = 0; i < 10000; i++) {
@@ -63,12 +65,36 @@ public class Brain {
         }
     }
 
-    public static void processMove() {
+    public static byte processMove() {
         isThinking = true;
 
+        AtomicReference<Byte> move = new AtomicReference<>((byte)-1);
+        ArrayList<Byte> moves = new ArrayList<>();
+        for (byte i = 0; i < Main.board.length; i++) if (Main.board[i] == Main.none) moves.add(i);
 
+        if (moves.isEmpty()) {
+            Main.gameOver = true;
+        } else {
+            memories.forEach(memory -> {
+                if (memoryMatchesBoard(memory)) {
+                    if (memory.goodMove) {
+                        Main.board[memory.move] = Main.circle;
+                        move.set(memory.move);
+                    } else {
+                        moves.remove(memory.move);
+                    }
+                }
+            });
+
+            if (move.get() == -1) {
+                // TODO: 10/10/2021 Remember if it was a good or bad move
+                move.set(moves.get(random.nextInt(moves.size())));
+                Main.board[move.get()] = Main.circle;
+            }
+        }
 
         isThinking = false;
+        return move.get();
     }
 
     private static boolean memoryMatchesBoard(Memory memory) {
@@ -76,7 +102,7 @@ public class Brain {
         return false;
     }
 
-    private static record Memory(boolean goodMove, byte[] board, byte square) {
+    private static record Memory(boolean goodMove, byte[] board, byte move) {
         public static int SIZE = 11;
 
         public Memory(byte[] data) {
@@ -86,14 +112,14 @@ public class Brain {
         public byte[] toArray() {
             byte[] data = new byte[SIZE];
             data[0] = (byte)(goodMove ? 1 : 0);
-            data[10] = square;
+            data[10] = move;
             System.arraycopy(board, 0, data, 1, board.length);
             return data;
         }
 
         @Override
         public String toString() {
-            return goodMove+" "+Arrays.toString(board)+" "+square;
+            return goodMove+" "+Arrays.toString(board)+" "+ move;
         }
     }
 }
