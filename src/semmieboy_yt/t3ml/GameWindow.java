@@ -94,8 +94,8 @@ public class GameWindow extends JFrame {
 
         graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        byte shapeX = 0, shapeY = 0, squareSize = (byte)(size / 3);
-        byte shapeMargin = 20;
+        byte shapeX = 0, shapeY = 0;
+        int squareSize = size / 3, shapeMargin = size / 15;
         byte shapeSize = (byte)(squareSize - shapeMargin * 2);
         for (int i = 0; i < Main.board.length; i++) {
             switch (Main.board[i]) {
