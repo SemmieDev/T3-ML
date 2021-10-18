@@ -11,7 +11,7 @@ public class GameWindow extends JFrame {
     private static final Color
             foreground = new Color(108, 64, 0),
             stripe = new Color(197, 38, 38);
-    private static final int lineTickness = 10, gameSize = 300;
+    private static final int gameSize = 300;
     private static final BufferedImage background;
 
     static {
@@ -25,6 +25,7 @@ public class GameWindow extends JFrame {
         graphics.fillRect(0, 0, gameSize, gameSize);
 
         graphics.setColor(foreground);
+        int lineTickness = 10;
         graphics.setStroke(new BasicStroke(lineTickness));
 
         //graphics.drawRect(0, 0, gameSize, gameSize);
@@ -40,7 +41,6 @@ public class GameWindow extends JFrame {
     }
 
     private Insets insets;
-    private Dimension windowSize;
     private int x, y, size;
 
     public GameWindow() {
@@ -66,7 +66,7 @@ public class GameWindow extends JFrame {
     public void paint(Graphics g) {
         if (insets == null) {
             insets = getInsets();
-            windowSize = new Dimension(gameSize + insets.left + insets.right, gameSize + insets.top + insets.bottom);
+            Dimension windowSize = new Dimension(gameSize + insets.left + insets.right, gameSize + insets.top + insets.bottom);
             setMinimumSize(windowSize);
         }
 
@@ -89,14 +89,19 @@ public class GameWindow extends JFrame {
         providedGraphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
         VolatileImage volatileImage = createVolatileImage(size, size);
         Graphics2D graphics = volatileImage.createGraphics();
+        graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
 
         graphics.drawImage(background, 0, 0, size, size, (img, infoflags, x, y, width12, height12) -> false);
 
         graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
+        float lineThickness = size / 30f;
+        graphics.setStroke(new BasicStroke(lineThickness));
+        graphics.setColor(foreground);
+
         byte shapeX = 0, shapeY = 0;
         int squareSize = size / 3, shapeMargin = size / 15;
-        byte shapeSize = (byte)(squareSize - shapeMargin * 2);
+        int shapeSize = squareSize - shapeMargin * 2;
         for (int i = 0; i < Main.board.length; i++) {
             switch (Main.board[i]) {
                 case Main.cross -> {
@@ -109,6 +114,7 @@ public class GameWindow extends JFrame {
                     graphics.drawOval(circleX, circleY, shapeSize, shapeSize);
                 }
             }
+
             if (++shapeX == 3) {
                 shapeX = 0;
                 shapeY++;
@@ -118,7 +124,7 @@ public class GameWindow extends JFrame {
         if (Main.gameOver && !Main.tie) {
             byte[] pos1 = Main.itp(Main.win[0]);
             byte[] pos2 = Main.itp(Main.win[1]);
-            graphics.setStroke(new BasicStroke(lineTickness / 2f));
+            graphics.setStroke(new BasicStroke(lineThickness / 2));
             graphics.setColor(stripe);
             graphics.drawLine(
                     pos1[0] * squareSize + squareSize / 2,
@@ -128,8 +134,10 @@ public class GameWindow extends JFrame {
             );
         }
 
-        providedGraphics.clearRect(0, 0, width, height);
+        providedGraphics.clearRect(insets.left, insets.top, width, height);
 
         providedGraphics.drawImage(volatileImage.getSnapshot(), x, y, size, size, (img, infoflags, x1, y1, width1, height1) -> false);
+        graphics.dispose();
+        providedGraphics.dispose();
     }
 }

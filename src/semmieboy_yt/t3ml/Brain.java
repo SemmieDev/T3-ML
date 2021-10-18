@@ -1,5 +1,9 @@
 package semmieboy_yt.t3ml;
 
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -81,16 +85,54 @@ public class Brain {
                 if (memoryMatchesBoard(memory)) {
                     if (memory.points < 0) {
                         moves.remove(memory.move);
-                    } else if (bestMemory.get() == null || bestMemory.get().points < memory.points) {
+                    } else if (bestMemory.get() == null || memory.points > bestMemory.get().points) {
                         bestMemory.set(memory);
+                    } else {
+                        memories.remove(memory);
                     }
                 }
             });
 
             if (bestMemory.get() == null) {
-                // TODO: 10/10/2021 Remember if it was a good or bad move
+                // TODO: 10/14/2021 Make algorithm for points
+
+                byte[] board = Arrays.copyOf(Main.board, Main.board.length);
                 move.set(moves.get(random.nextInt(moves.size())));
                 Main.board[move.get()] = Main.circle;
+                Main.gameWindow.repaint();
+
+                AtomicReference<Byte> points = new AtomicReference<>();
+
+                JFrame jFrame = new JFrame("How good did I do?");
+                Container container = jFrame.getContentPane();
+
+                JTextField pointsInput = new JTextField();
+                pointsInput.setBounds(0, 0, 300, 300);
+                container.add(pointsInput);
+
+                jFrame.addWindowListener(new WindowAdapter() {
+                    @Override
+                    public void windowClosing(WindowEvent event) {
+                        points.set(Byte.parseByte(pointsInput.getText()));
+                        jFrame.dispose();
+                        synchronized (jFrame) {
+                            jFrame.notifyAll();
+                        }
+                    }
+                });
+
+                jFrame.setSize(300, 300);
+                jFrame.setVisible(true);
+
+                while (jFrame.isVisible()) {
+                    try {
+                        synchronized (jFrame) {
+                            jFrame.wait();
+                        }
+                    } catch (InterruptedException ignored) {}
+                }
+
+                if (points.get() != null) memories.add(new Memory(points.get(), board, move.get()));
             } else {
                 Main.board[bestMemory.get().move] = Main.circle;
             }
@@ -109,14 +151,6 @@ public class Brain {
             before = Arrays.copyOf(board, board.length);
             for (byte j = 0; j < board.length; j++) board[j] = before[rotate(j)];
             memory.move = rotate(memory.move);
-            /*board[Main.pti(0, 0)] = before[Main.pti(0, 1)];
-            board[Main.pti(1, 0)] = before[Main.pti(0, 0)];
-            board[Main.pti(2, 0)] = before[Main.pti(1, 0)];
-            board[Main.pti(2, 1)] = before[Main.pti(2, 0)];
-            board[Main.pti(2, 2)] = before[Main.pti(2, 1)];
-            board[Main.pti(1, 2)] = before[Main.pti(2, 2)];
-            board[Main.pti(0, 2)] = before[Main.pti(1, 2)];
-            board[Main.pti(0, 1)] = before[Main.pti(0, 2)];*/
             if (Arrays.equals(board, memory.board)) return true;
         }
         return false;
@@ -162,6 +196,12 @@ public class Brain {
 
         public Memory copy() {
             return new Memory(points, board, move);
+        }
+
+        @Override
+        public boolean equals(Object object) {
+            if (object instanceof Memory memory) return memory.points == points && Arrays.equals(memory.board, board) && memory.move == move;
+            return false;
         }
 
         @Override

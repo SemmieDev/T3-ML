@@ -6,7 +6,7 @@ public class Main {
     public static volatile boolean gameOver, tie;
     public static final byte[] win = new byte[2];
 
-    private static GameWindow gameWindow;
+    public static GameWindow gameWindow;
 
     public static void main(String[] args) {
         Runtime.getRuntime().addShutdownHook(new Thread(Brain::save));
