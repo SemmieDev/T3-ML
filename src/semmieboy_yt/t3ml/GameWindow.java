@@ -2,6 +2,8 @@ package semmieboy_yt.t3ml;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
@@ -25,16 +27,16 @@ public class GameWindow extends JFrame {
         graphics.fillRect(0, 0, gameSize, gameSize);
 
         graphics.setColor(foreground);
-        int lineTickness = 10;
-        graphics.setStroke(new BasicStroke(lineTickness));
+        int lineThickness = 10;
+        graphics.setStroke(new BasicStroke(lineThickness));
 
         //graphics.drawRect(0, 0, gameSize, gameSize);
 
         byte squareSize = gameSize / 3;
         for (int i = 0; i < 2; i++) {
-            int linePos = squareSize * i + squareSize - lineTickness / 2;
-            graphics.fillRect(linePos, 0, lineTickness, gameSize);
-            graphics.fillRect(0, linePos, gameSize, lineTickness);
+            int linePos = squareSize * i + squareSize - lineThickness / 2;
+            graphics.fillRect(linePos, 0, lineThickness, gameSize);
+            graphics.fillRect(0, linePos, gameSize, lineThickness);
         }
 
         graphics.dispose();
@@ -53,10 +55,25 @@ public class GameWindow extends JFrame {
         addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent event) {
-                int smallSize = size / 3;
-                int selectionX = (event.getX() - x) / smallSize, selectionY = (event.getY() - y) / smallSize;
-                if ((selectionX >= 0 && selectionX < 3) && (selectionY >= 0 && selectionY < 3)) {
-                    Main.onMove(Main.pti(selectionX, selectionY));
+                if (!Main.autoLearn) {
+                    int smallSize = size / 3;
+                    int selectionX = (event.getX() - x) / smallSize, selectionY = (event.getY() - y) / smallSize;
+                    if ((selectionX >= 0 && selectionX < 3) && (selectionY >= 0 && selectionY < 3)) {
+                        Main.onMove(Main.pti(selectionX, selectionY));
+                    }
+                }
+            }
+        });
+        addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent event) {
+                if (event.getKeyCode() == KeyEvent.VK_A) {
+                    Main.autoLearn = !Main.autoLearn;
+                    if (Main.autoLearn) {
+                        synchronized (Main.autoLearnLock) {
+                            Main.autoLearnLock.notifyAll();
+                        }
+                    }
                 }
             }
         });

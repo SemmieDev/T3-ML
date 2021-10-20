@@ -1,33 +1,28 @@
 package semmieboy_yt.t3ml;
 
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Random;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 public class Brain {
-    public static volatile boolean isThinking = false;
+    public static volatile boolean isThinking;
+    public static final Object thinkingLock = new Object();
 
+    private static Memory lostMemory;
     private static final ArrayList<Memory> memories = new ArrayList<>();
     private static final File saveFile = new File("brain.dat");
-    private static final Random random = new Random();
 
     public static void debug() {
         byte[] board = new byte[9];
         byte[] squareAndPoints = new byte[2];
         for (int i = 0; i < 10000; i++) {
-            random.nextBytes(board);
-            random.nextBytes(squareAndPoints);
+            Main.random.nextBytes(board);
+            Main.random.nextBytes(squareAndPoints);
             memories.add(new Memory(squareAndPoints[0], board, squareAndPoints[1]));
         }
         long time = System.currentTimeMillis();
@@ -71,74 +66,69 @@ public class Brain {
     public static void processMove() {
         isThinking = true;
 
-        AtomicReference<Byte> move = new AtomicReference<>((byte)-1);
-        ArrayList<Byte> moves = new ArrayList<>();
-        for (byte i = 0; i < Main.board.length; i++) if (Main.board[i] != Main.cross && Main.board[i] != Main.circle) moves.add(i);
+        var move = new Object() {
+            public byte value = -1;
+        };
+        ArrayList<Byte> possibleMoves = new ArrayList<>();
+        for (byte i = 0; i < Main.board.length; i++) if (Main.board[i] != Main.cross && Main.board[i] != Main.circle) possibleMoves.add(i);
 
-        if (moves.isEmpty()) {
+        if (possibleMoves.isEmpty()) {
             Main.gameOver = true;
             Main.tie = true;
         } else {
-            AtomicReference<Memory> bestMemory = new AtomicReference<>();
+            var bestMemory = new Object() {
+                public Memory value = null;
+            };
+            ArrayList<Byte> smartMoves = new ArrayList<>(possibleMoves);
+            ArrayList<Memory> memories = new ArrayList<>(Brain.memories);
             memories.forEach(m -> {
                 Memory memory = m.copy();
                 if (memoryMatchesBoard(memory)) {
                     if (memory.points < 0) {
-                        moves.remove(memory.move);
-                    } else if (bestMemory.get() == null || memory.points > bestMemory.get().points) {
-                        bestMemory.set(memory);
+                        smartMoves.remove((Object)memory.move);
+                    } else if (bestMemory.value == null || memory.points > bestMemory.value.points) {
+                        bestMemory.value = memory;
                     } else {
-                        memories.remove(memory);
+                        Brain.memories.remove(memory);
                     }
                 }
             });
+            memories.clear();
 
-            if (bestMemory.get() == null) {
-                // TODO: 10/14/2021 Make algorithm for points
-
-                byte[] board = Arrays.copyOf(Main.board, Main.board.length);
-                move.set(moves.get(random.nextInt(moves.size())));
-                Main.board[move.get()] = Main.circle;
-                Main.gameWindow.repaint();
-
-                AtomicReference<Byte> points = new AtomicReference<>();
-
-                JFrame jFrame = new JFrame("How good did I do?");
-                Container container = jFrame.getContentPane();
-
-                JTextField pointsInput = new JTextField();
-                pointsInput.setBounds(0, 0, 300, 300);
-                container.add(pointsInput);
-
-                jFrame.addWindowListener(new WindowAdapter() {
-                    @Override
-                    public void windowClosing(WindowEvent event) {
-                        points.set(Byte.parseByte(pointsInput.getText()));
-                        jFrame.dispose();
-                        synchronized (jFrame) {
-                            jFrame.notifyAll();
-                        }
-                    }
-                });
-
-                jFrame.setSize(300, 300);
-                jFrame.setVisible(true);
-
-                while (jFrame.isVisible()) {
-                    try {
-                        synchronized (jFrame) {
-                            jFrame.wait();
-                        }
-                    } catch (InterruptedException ignored) {}
-                }
-
-                if (points.get() != null) memories.add(new Memory(points.get(), board, move.get()));
+            if (smartMoves.isEmpty()) {
+                // TODO: 10/20/2021 The AI is trapped, add a bad memory with the move that caused it to get trapped
+                Main.board[possibleMoves.get(Main.random.nextInt(possibleMoves.size()))] = Main.circle;
             } else {
-                Main.board[bestMemory.get().move] = Main.circle;
+                if (bestMemory.value == null) {
+                    byte[] board = Arrays.copyOf(Main.board, Main.board.length);
+                    move.value = smartMoves.get(Main.random.nextInt(smartMoves.size()));
+                    Main.board[move.value] = Main.circle;
+                    Main.checkWin();
+
+                    if (Main.gameOver) {
+                        // Game over after AI did something, so AI won
+                        Brain.memories.add(new Memory((byte) 100, board, move.value));
+                    } else {
+                        lostMemory = new Memory((byte) -100, board, move.value);
+                    }
+                } else {
+                    Main.board[bestMemory.value.move] = Main.circle;
+                    Main.checkWin();
+                }
             }
         }
 
         isThinking = false;
+        synchronized (thinkingLock) {
+            thinkingLock.notifyAll();
+        }
+    }
+
+    public static void onGameOver() {
+        if (lostMemory != null) {
+            memories.add(lostMemory.copy());
+            lostMemory = null;
+        }
     }
 
     private static boolean memoryMatchesBoard(Memory memory) {
