@@ -70,7 +70,7 @@ public class Brain {
             public byte value = -1;
         };
         ArrayList<Byte> possibleMoves = new ArrayList<>();
-        for (byte i = 0; i < Main.board.length; i++) if (Main.board[i] != Main.cross && Main.board[i] != Main.circle) possibleMoves.add(i);
+        for (byte i = 0; i < Main.board.length; i++) if (Main.board[i] == Main.none) possibleMoves.add(i);
 
         if (possibleMoves.isEmpty()) {
             Main.gameOver = true;
@@ -87,8 +87,10 @@ public class Brain {
                     if (memory.points < 0) {
                         smartMoves.remove((Object)memory.move);
                     } else if (bestMemory.value == null || memory.points > bestMemory.value.points) {
-                        bestMemory.value = memory;
+                        // Don't integrate this if statement in the above if statement, or the else block will be called
+                        if (Main.board[memory.move] == Main.none) bestMemory.value = memory;
                     } else {
+                        // By the time this get reached, the memory is always the worst memory
                         Brain.memories.remove(memory);
                     }
                 }
@@ -132,7 +134,7 @@ public class Brain {
     }
 
     private static boolean memoryMatchesBoard(Memory memory) {
-        if (Arrays.equals(Main.board, memory.board)) return true;
+        if (boardEquals(Main.board, memory.board)) return true;
         byte[] board = Arrays.copyOf(Main.board, Main.board.length);
         byte[] before;
 
@@ -141,13 +143,25 @@ public class Brain {
             before = Arrays.copyOf(board, board.length);
             for (byte j = 0; j < board.length; j++) board[j] = before[rotate(j)];
             memory.move = rotate(memory.move);
-            if (Arrays.equals(board, memory.board)) return true;
+            if (boardEquals(board, memory.board)) return true;
         }
         return false;
     }
 
+    private static boolean boardEquals(byte[] board, boolean[] memoryBoard) {
+        boolean matches = true;
+        for (int i = 0; i < board.length; i++) {
+            if (board[i] == Main.cross && !memoryBoard[i]) {
+                matches = false;
+                break;
+            }
+        }
+        return matches;
+    }
+
     private static byte rotate(byte index) {
         switch (index) {
+            // TODO: 10/20/2021 Precalculate these values
             case 0 -> index = Main.pti(0, 1);
             case 1 -> index = Main.pti(0, 0);
             case 2 -> index = Main.pti(1, 0);
@@ -164,23 +178,32 @@ public class Brain {
         public static int SIZE = 11;
 
         public byte points, move;
-        public final byte[] board;
+        public final boolean[] board;
 
-        public Memory(byte points, byte[] board, byte move) {
+        public Memory(byte points, boolean[] board, byte move) {
             this.points = points;
             this.board = board;
             this.move = move;
         }
 
+        public Memory(byte points, byte[] board, byte move) {
+            this.points = points;
+            this.board = new boolean[board.length];
+            this.move = move;
+
+            for (int i = 0; i < board.length; i++) if (board[i] == Main.cross) this.board[i] = true;
+        }
+
         public Memory(byte[] data) {
-            this (data[0], Arrays.copyOfRange(data, 1, 10), data[10]);
+            this(data[0], Arrays.copyOfRange(data, 1, 10), data[10]);
         }
 
         public byte[] toArray() {
             byte[] data = new byte[SIZE];
             data[0] = points;
+            // TODO: 10/20/2021 Store as bits
+            for (int i = 1; i < board.length + 1; i++) data[i] = (byte)(board[i - 1] ? 1 : 0);
             data[10] = move;
-            System.arraycopy(board, 0, data, 1, board.length);
             return data;
         }
 

@@ -1,11 +1,12 @@
 package semmieboy_yt.t3ml;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 
 public class Main {
     public static final byte[] board = new byte[9];
-    public static final byte cross = 0, circle = 1;
+    public static final byte none = 0, cross = 1, circle = 2;
     public static volatile boolean gameOver, tie;
     public static final byte[] win = new byte[2];
     public static boolean autoLearn = !(System.getProperty("autoLearn") == null);
@@ -28,7 +29,7 @@ public class Main {
             }
             Brain.save();
         }));
-        clearBoard();
+        Arrays.fill(board, none);
         Brain.load();
         gameWindow = new GameWindow();
 
@@ -47,19 +48,14 @@ public class Main {
         }
     }
 
-    private static void clearBoard() {
-        byte value = circle;
-        for (byte i = 0; i < board.length; i++) board[i] = ++value;
-    }
-
     public static void onMove(byte move) {
         if (gameOver) {
             gameOver = tie = false;
-            clearBoard();
+            Arrays.fill(board, none);
             gameWindow.repaint();
         } else {
             if (!Brain.isThinking) {
-                if (board[move] != cross && board[move] != circle) {
+                if (board[move] == none) {
                     board[move] = cross;
                     checkWin();
                     gameWindow.repaint();
@@ -74,7 +70,7 @@ public class Main {
 
     public static void doAutoMove() {
         ArrayList<Byte> moves = new ArrayList<>();
-        for (byte i = 0; i < Main.board.length; i++) if (Main.board[i] != Main.cross && Main.board[i] != Main.circle) moves.add(i);
+        for (byte i = 0; i < board.length; i++) if (board[i] == none) moves.add(i);
         if (moves.isEmpty()) {
             gameOver = tie = true;
             onMove((byte)0);
@@ -83,16 +79,21 @@ public class Main {
         }
     }
 
+    public static boolean isSame(byte i1, byte i2, byte i3) {
+        if (board[i1] == none || board[i2] == none || board[i3] == none) return false;
+        return board[i1] == board[i2] && board[i1] == board[i3];
+    }
+
     public static void checkWin() {
         for (byte i = 0; i < 3; i++) {
-            if (board[pti(i, 1)] == board[pti(i, 0)] && board[pti(i, 2)] == board[pti(i, 0)]) {
+            if (isSame(pti(i, 0), pti(i, 1), pti(i, 2))) {
                 gameOver = true;
                 win[0] = pti(i, 0);
                 win[1] = pti(i, 2);
                 break;
             }
 
-            if (board[pti(1, i)] == board[pti(0, i)] && board[pti(2, i)] == board[pti(0, i)]) {
+            if (isSame(pti(0, i), pti(1, i), pti(2, i))) {
                 gameOver = true;
                 win[0] = pti(0, i);
                 win[1] = pti(2, i);
@@ -101,11 +102,11 @@ public class Main {
         }
 
         if (!gameOver) {
-            if (board[pti(1, 1)] == board[0] && board[pti(2, 2)] == board[0]) {
+            if (isSame((byte)0, pti(1, 1), pti(2, 2))) {
                 gameOver = true;
                 win[0] = 0;
                 win[1] = pti(2, 2);
-            } else if (board[pti(1, 1)] == board[pti(2, 0)] && board[pti(0, 2)] == board[pti(2, 0)]) {
+            } else if (isSame(pti(2, 0), pti(1, 1), pti(0, 2))) {
                 gameOver = true;
                 win[0] = pti(2, 0);
                 win[1] = pti(0, 2);
