@@ -66,6 +66,7 @@ public class Brain {
     public static void processMove() {
         isThinking = true;
 
+        lostMemory = null;
         var move = new Object() {
             public byte value = -1;
         };
@@ -85,12 +86,17 @@ public class Brain {
                 Memory memory = m.copy();
                 if (memoryMatchesBoard(memory)) {
                     if (memory.points < 0) {
+                        System.out.println("Removing bad move: "+memory.move);
                         smartMoves.remove((Object)memory.move);
                     } else if (bestMemory.value == null || memory.points > bestMemory.value.points) {
                         // Don't integrate this if statement in the above if statement, or the else block will be called
-                        if (Main.board[memory.move] == Main.none) bestMemory.value = memory;
+                        if (Main.board[memory.move] == Main.none) {
+                            System.out.println("Best move so far: "+memory.move);
+                            bestMemory.value = memory;
+                        }
                     } else {
                         // By the time this get reached, the memory is always the worst memory
+                        System.out.println("Forgetting worse move: "+memory.move);
                         Brain.memories.remove(memory);
                     }
                 }
@@ -98,10 +104,12 @@ public class Brain {
             memories.clear();
 
             if (smartMoves.isEmpty()) {
-                // TODO: 10/20/2021 The AI is trapped, add a bad memory with the move that caused it to get trapped
+                // TODO: 10/20/2021 Add a bad memory with the move that caused it to get trapped
+                System.out.println("Trapped");
                 Main.board[possibleMoves.get(Main.random.nextInt(possibleMoves.size()))] = Main.circle;
             } else {
                 if (bestMemory.value == null) {
+                    System.out.println("Don't know any good moves");
                     byte[] board = Arrays.copyOf(Main.board, Main.board.length);
                     move.value = smartMoves.get(Main.random.nextInt(smartMoves.size()));
                     Main.board[move.value] = Main.circle;
@@ -109,11 +117,13 @@ public class Brain {
 
                     if (Main.gameOver) {
                         // Game over after AI did something, so AI won
+                        System.out.println("Remembering good move: "+move.value);
                         Brain.memories.add(new Memory((byte) 100, board, move.value));
                     } else {
                         lostMemory = new Memory((byte) -100, board, move.value);
                     }
                 } else {
+                    System.out.println("Doing best move: "+bestMemory.value.move);
                     Main.board[bestMemory.value.move] = Main.circle;
                     Main.checkWin();
                 }
@@ -128,6 +138,7 @@ public class Brain {
 
     public static void onGameOver() {
         if (lostMemory != null) {
+            System.out.println("Remembering bad move: "+lostMemory.move);
             memories.add(lostMemory.copy());
             lostMemory = null;
         }
@@ -151,7 +162,7 @@ public class Brain {
     private static boolean boardEquals(byte[] board, boolean[] memoryBoard) {
         boolean matches = true;
         for (int i = 0; i < board.length; i++) {
-            if (board[i] == Main.cross && !memoryBoard[i]) {
+            if (board[i] == Main.cross != memoryBoard[i]) {
                 matches = false;
                 break;
             }
