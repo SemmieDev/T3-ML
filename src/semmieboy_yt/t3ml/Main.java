@@ -60,7 +60,7 @@ public class Main {
                     checkWin();
                     gameWindow.repaint();
                     if (!gameOver) {
-                        Brain.processMove();
+                        if (Brain.processMove()) checkWin();
                         gameWindow.repaint();
                     }
                 }

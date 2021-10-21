@@ -63,9 +63,11 @@ public class Brain {
         }
     }
 
-    public static void processMove() {
+    public static boolean processMove() {
         isThinking = true;
 
+        Main.print("Thinking");
+        boolean checkWin = true;
         lostMemory = null;
         var move = new Object() {
             public byte value = -1;
@@ -113,27 +115,29 @@ public class Brain {
                     byte[] board = Arrays.copyOf(Main.board, Main.board.length);
                     move.value = smartMoves.get(Main.random.nextInt(smartMoves.size()));
                     Main.board[move.value] = Main.circle;
+                    checkWin = false;
                     Main.checkWin();
 
                     if (Main.gameOver) {
                         // Game over after AI did something, so AI won
                         Main.print("Remembering good move: "+move.value);
-                        Brain.memories.add(new Memory((byte) 100, board, move.value));
+                        Brain.memories.add(new Memory((byte)100, board, move.value));
                     } else {
-                        lostMemory = new Memory((byte) -100, board, move.value);
+                        lostMemory = new Memory((byte)-100, board, move.value);
                     }
                 } else {
                     Main.print("Doing best move: "+bestMemory.value.move);
                     Main.board[bestMemory.value.move] = Main.circle;
-                    Main.checkWin();
                 }
             }
         }
+        Main.print("Done thinking");
 
         isThinking = false;
         synchronized (thinkingLock) {
             thinkingLock.notifyAll();
         }
+        return checkWin;
     }
 
     public static void onGameOver() {
@@ -145,8 +149,8 @@ public class Brain {
     }
 
     private static boolean memoryMatchesBoard(Memory memory) {
-        if (boardEquals(Main.board, memory.board)) return true;
-        byte[] board = Arrays.copyOf(Main.board, Main.board.length);
+        if (Arrays.equals(Main.board, memory.board)) return true;
+        /*byte[] board = Arrays.copyOf(Main.board, Main.board.length);
         byte[] before;
 
         // rotate the board, then check if it equals
@@ -155,19 +159,8 @@ public class Brain {
             for (byte j = 0; j < board.length; j++) board[j] = before[rotate(j)];
             memory.move = rotate(memory.move);
             if (boardEquals(board, memory.board)) return true;
-        }
+        }*/
         return false;
-    }
-
-    private static boolean boardEquals(byte[] board, boolean[] memoryBoard) {
-        boolean matches = true;
-        for (int i = 0; i < board.length; i++) {
-            if (board[i] == Main.cross != memoryBoard[i]) {
-                matches = false;
-                break;
-            }
-        }
-        return matches;
     }
 
     private static byte rotate(byte index) {
@@ -189,20 +182,12 @@ public class Brain {
         public static int SIZE = 11;
 
         public byte points, move;
-        public final boolean[] board;
-
-        public Memory(byte points, boolean[] board, byte move) {
-            this.points = points;
-            this.board = board;
-            this.move = move;
-        }
+        public final byte[] board;
 
         public Memory(byte points, byte[] board, byte move) {
             this.points = points;
-            this.board = new boolean[board.length];
+            this.board = board;
             this.move = move;
-
-            for (int i = 0; i < board.length; i++) if (board[i] == Main.cross) this.board[i] = true;
         }
 
         public Memory(byte[] data) {
@@ -212,8 +197,7 @@ public class Brain {
         public byte[] toArray() {
             byte[] data = new byte[SIZE];
             data[0] = points;
-            // TODO: 10/20/2021 Store as bits
-            for (int i = 1; i < board.length + 1; i++) data[i] = (byte)(board[i - 1] ? 1 : 0);
+            System.arraycopy(board, 0, data, 1, board.length);
             data[10] = move;
             return data;
         }
