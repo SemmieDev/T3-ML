@@ -126,4 +126,8 @@ public class Main {
         pos[1] = (byte)(index / 3);
         return pos;
     }
+
+    public static void print(String message) {
+        if (!autoLearn) System.out.println(message);
+    }
 }
