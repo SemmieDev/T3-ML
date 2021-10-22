@@ -150,30 +150,29 @@ public class Brain {
 
     private static boolean memoryMatchesBoard(Memory memory) {
         if (Arrays.equals(Main.board, memory.board)) return true;
-        /*byte[] board = Arrays.copyOf(Main.board, Main.board.length);
+        byte[] board = Arrays.copyOf(Main.board, Main.board.length);
         byte[] before;
 
         // rotate the board, then check if it equals
-        for (byte i = 0; i < 8; i++) {
+        for (byte i = 0; i < 4; i++) {
             before = Arrays.copyOf(board, board.length);
             for (byte j = 0; j < board.length; j++) board[j] = before[rotate(j)];
             memory.move = rotate(memory.move);
-            if (boardEquals(board, memory.board)) return true;
-        }*/
+            if (Arrays.equals(board, memory.board)) return true;
+        }
         return false;
     }
 
     private static byte rotate(byte index) {
         switch (index) {
-            // TODO: 10/20/2021 Precalculate these values
-            case 0 -> index = Main.pti(0, 1);
-            case 1 -> index = Main.pti(0, 0);
-            case 2 -> index = Main.pti(1, 0);
-            case 5 -> index = Main.pti(2, 0);
-            case 8 -> index = Main.pti(2, 1);
-            case 7 -> index = Main.pti(2, 2);
-            case 6 -> index = Main.pti(1, 2);
-            case 3 -> index = Main.pti(0, 2);
+            case 0 -> index = 2;
+            case 1 -> index = 5;
+            case 2 -> index = 8;
+            case 3 -> index = 1;
+            case 5 -> index = 7;
+            case 6 -> index = 0;
+            case 7 -> index = 3;
+            case 8 -> index = 6;
         }
         return index;
     }
