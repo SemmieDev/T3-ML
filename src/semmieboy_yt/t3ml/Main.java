@@ -36,7 +36,14 @@ public class Main {
         synchronized (autoLearnLock) {
             while (true) {
                 if (autoLearn) {
-                    doAutoMove();
+                    ArrayList<Byte> moves = new ArrayList<>();
+                    for (byte i = 0; i < board.length; i++) if (board[i] == none) moves.add(i);
+                    if (moves.isEmpty()) {
+                        gameOver = tie = true;
+                        onMove((byte)0);
+                    } else {
+                        onMove(moves.get(random.nextInt(moves.size())));
+                    }
                 } else {
                     try {
                         autoLearnLock.wait();
@@ -65,17 +72,6 @@ public class Main {
                     }
                 }
             }
-        }
-    }
-
-    public static void doAutoMove() {
-        ArrayList<Byte> moves = new ArrayList<>();
-        for (byte i = 0; i < board.length; i++) if (board[i] == none) moves.add(i);
-        if (moves.isEmpty()) {
-            gameOver = tie = true;
-            onMove((byte)0);
-        } else {
-            onMove(moves.get(random.nextInt(moves.size())));
         }
     }
 
