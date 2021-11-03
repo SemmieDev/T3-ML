@@ -7,6 +7,7 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="JInput" level="project" />
+    <orderEntry type="library" name="Jamepad" level="project" />
+    <orderEntry type="library" name="sdl2gdx" level="project" />
   </component>
 </module>
