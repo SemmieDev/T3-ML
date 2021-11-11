@@ -1,10 +1,5 @@
 package semmieboy_yt.t3ml;
 
-import net.java.games.input.Component;
-import net.java.games.input.Event;
-import net.java.games.input.EventQueue;
-import net.java.games.input.*;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
@@ -82,69 +77,6 @@ public class GameWindow extends JFrame {
                 }
             }
         });
-        var vars = new Object() {
-            public Controller controller;
-            public final Object lock = new Object();
-        };
-        ControllerEnvironment.getDefaultEnvironment().addControllerListener(new ControllerListener() {
-            @Override
-            public void controllerRemoved(ControllerEvent event) {
-                Controller controller = event.getController();
-                if (controller.getType() == Controller.Type.GAMEPAD && event.getController().getPortNumber() == vars.controller.getPortNumber()) {
-                    vars.controller = null;
-                }
-            }
-
-            @Override
-            public void controllerAdded(ControllerEvent event) {
-                Controller controller = event.getController();
-                if (controller.getType() == Controller.Type.GAMEPAD && vars.controller != null) {
-                    vars.controller = controller;
-                    synchronized (vars.lock) {
-                        vars.lock.notifyAll();
-                    }
-                }
-            }
-        });
-        new Thread(() -> {
-            Event event = new Event();
-
-            while (true) {
-                while (vars.controller == null) {
-                    synchronized (vars.lock) {
-                        try {
-                            vars.lock.wait();
-                        } catch (InterruptedException exception) {
-                            exception.printStackTrace();
-                        }
-                    }
-                }
-                EventQueue eventQueue = vars.controller.getEventQueue();
-
-                if (vars.controller.poll()) {
-                    while (eventQueue.getNextEvent(event)) {
-                        Component component = event.getComponent();
-                        Component.Identifier id = component.getIdentifier();
-
-                        if (id == Component.Identifier.Axis.X) {
-                            System.out.println("Axis X");
-                        } else if (id == Component.Identifier.Axis.Y) {
-                            System.out.println("Axis Y");
-                        } else if (id == Component.Identifier.Button.A) {
-                            System.out.println("Button A");
-                        }
-
-                        System.out.println(event.getValue()+" "+component.getPollData());
-                    }
-
-                    try {
-                        Thread.sleep(1);
-                    } catch (InterruptedException exception) {
-                        exception.printStackTrace();
-                    }
-                }
-            }
-        }).start();
     }
 
     @Override

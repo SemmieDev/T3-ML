@@ -3,7 +3,6 @@
     <output-path>$PROJECT_DIR$/out/artifacts/T3_ML</output-path>
     <root id="archive" name="T3-ML.jar">
       <element id="module-output" name="T3-ML" />
-      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/net/java/jinput/jinput/2.0.9/jinput-2.0.9.jar" path-in-jar="/" />
     </root>
   </artifact>
 </component>
