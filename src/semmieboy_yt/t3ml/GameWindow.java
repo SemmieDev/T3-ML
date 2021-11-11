@@ -1,6 +1,9 @@
 package semmieboy_yt.t3ml;
 
-import com.studiohartman.jamepad.*;
+import net.java.games.input.Component;
+import net.java.games.input.Event;
+import net.java.games.input.EventQueue;
+import net.java.games.input.*;
 
 import javax.swing.*;
 import java.awt.*;
@@ -16,13 +19,9 @@ public class GameWindow extends JFrame {
             foreground = new Color(108, 64, 0),
             stripe = new Color(197, 38, 38);
     private static final int gameSize = 300;
-    private static BufferedImage background;
+    private static final BufferedImage background;
 
-    private Insets insets;
-    private int x, y, size;
-
-    public GameWindow() {
-        super("T3-ML");
+    static {
         background = new BufferedImage(gameSize, gameSize, Image.SCALE_FAST);
         Graphics2D graphics = background.createGraphics();
 
@@ -46,7 +45,13 @@ public class GameWindow extends JFrame {
         }
 
         graphics.dispose();
+    }
 
+    private Insets insets;
+    private int x, y, size;
+
+    public GameWindow() {
+        super("T3-ML");
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setVisible(true);
@@ -77,34 +82,69 @@ public class GameWindow extends JFrame {
                 }
             }
         });
-        ControllerManager controllerManager = new ControllerManager();
-        controllerManager.initSDLGamepad();
+        var vars = new Object() {
+            public Controller controller;
+            public final Object lock = new Object();
+        };
+        ControllerEnvironment.getDefaultEnvironment().addControllerListener(new ControllerListener() {
+            @Override
+            public void controllerRemoved(ControllerEvent event) {
+                Controller controller = event.getController();
+                if (controller.getType() == Controller.Type.GAMEPAD && event.getController().getPortNumber() == vars.controller.getPortNumber()) {
+                    vars.controller = null;
+                }
+            }
 
-        //Print a message when the "A" button is pressed. Exit if the "B" button is pressed
-        //or the controller disconnects.
-        ControllerIndex controller = controllerManager.getControllerIndex(0);
-
-        Thread thread = new Thread(() -> {
-            while (true) {
-                controllerManager.update(); //If using ControllerIndex, you should call update() to check if a new controller
-                //was plugged in or unplugged at this index.
-
-                try {
-                    if (controller.isConnected()) {
-                        System.out.println(controller.getAxisState(ControllerAxis.RIGHTX));
-                        if (controller.isButtonPressed(ControllerButton.A)) {
-                            System.out.println("\"A\" on \"" + controller.getName() + "\" is pressed");
-                        }
-                    } else {
-                        Thread.sleep(1000);
+            @Override
+            public void controllerAdded(ControllerEvent event) {
+                Controller controller = event.getController();
+                if (controller.getType() == Controller.Type.GAMEPAD && vars.controller != null) {
+                    vars.controller = controller;
+                    synchronized (vars.lock) {
+                        vars.lock.notifyAll();
                     }
-                } catch (ControllerUnpluggedException | InterruptedException exception) {
-                    break;
                 }
             }
         });
-        thread.setDaemon(true);
-        thread.start();
+        new Thread(() -> {
+            Event event = new Event();
+
+            while (true) {
+                while (vars.controller == null) {
+                    synchronized (vars.lock) {
+                        try {
+                            vars.lock.wait();
+                        } catch (InterruptedException exception) {
+                            exception.printStackTrace();
+                        }
+                    }
+                }
+                EventQueue eventQueue = vars.controller.getEventQueue();
+
+                if (vars.controller.poll()) {
+                    while (eventQueue.getNextEvent(event)) {
+                        Component component = event.getComponent();
+                        Component.Identifier id = component.getIdentifier();
+
+                        if (id == Component.Identifier.Axis.X) {
+                            System.out.println("Axis X");
+                        } else if (id == Component.Identifier.Axis.Y) {
+                            System.out.println("Axis Y");
+                        } else if (id == Component.Identifier.Button.A) {
+                            System.out.println("Button A");
+                        }
+
+                        System.out.println(event.getValue()+" "+component.getPollData());
+                    }
+
+                    try {
+                        Thread.sleep(1);
+                    } catch (InterruptedException exception) {
+                        exception.printStackTrace();
+                    }
+                }
+            }
+        }).start();
     }
 
     @Override

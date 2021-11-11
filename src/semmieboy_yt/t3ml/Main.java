@@ -1,10 +1,5 @@
 package semmieboy_yt.t3ml;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
@@ -19,69 +14,6 @@ public class Main {
     public static final Random random = new Random();
 
     public static GameWindow gameWindow;
-
-    static {
-        if (System.getProperty("libraries.path.set") == null) {
-            System.out.println("Setting library path");
-            StringBuilder command = new StringBuilder();
-
-            ProcessHandle.current().info().command().ifPresentOrElse(jvm -> {
-                command.append("\"").append(jvm).append("\" ");
-            }, () -> {
-                throw new RuntimeException("Unable to find the JVM location");
-            });
-
-            ManagementFactory.getRuntimeMXBean().getInputArguments().forEach(argument -> command.append(argument).append(" "));
-
-            File natives = new File("natives");
-            if (!natives.isDirectory() && !natives.mkdir()) throw new RuntimeException("Unable to create natives directory");
-
-            command.append("-Dlibraries.path.set=true ")
-                    .append("-Djava.library.path=").append(natives.getAbsolutePath())
-                    .append(" -cp ").append(System.getProperty("java.class.path"))
-                    .append(" ").append(Main.class.getName());
-
-            String sunCommand = System.getProperty("sun.java.command");
-            int sunCommandIndex = sunCommand.indexOf(" ");
-            if (sunCommandIndex != -1) command.append(sunCommand.substring(sunCommandIndex));
-
-            System.out.println("Attempting to start process");
-            try {
-                System.exit(new ProcessBuilder(command.toString().split(" ")).inheritIO().start().waitFor());
-            } catch (InterruptedException | IOException exception) {
-                throw new RuntimeException("Unable to start process", exception);
-            }
-        }
-
-        String os = System.getProperty("os.name").toLowerCase().replaceAll("\s", "");
-        if (os.contains("win")) {
-            System.out.println("Detected Windows");
-            extractLib("sdl2gdx.dll");
-            extractLib("sdl2gdx64.dll");
-        } else if (os.contains("mac") || os.contains("osx")) {
-            System.out.println("Detected Mac");
-            extractLib("libsdl2gdx64.dylib");
-        } else if (os.contains("nix") || os.contains("nux") || os.contains("aix") || os.contains("sunos")) {
-            System.out.println("Detected Linux");
-            extractLib("libsdl2gdx64.so");
-        } else {
-            throw new RuntimeException("Unsupported OS: "+System.getProperty("os.name"));
-        }
-    }
-
-    private static void extractLib(String name) {
-        File library = new File("natives"+File.separator+name);
-        if (!library.isFile()) {
-            System.out.println("Extracting library "+name);
-            try (FileOutputStream libraryFile = new FileOutputStream(library)) {
-                InputStream libraryStream = Main.class.getResourceAsStream("/"+name);
-                if (libraryStream == null) throw new RuntimeException("Couldn't find library: "+name);
-                libraryStream.transferTo(libraryFile);
-            } catch (IOException exception) {
-                throw new RuntimeException("Couldn't extract library: "+name, exception);
-            }
-        }
-    }
 
     public static void main(String[] args) {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {

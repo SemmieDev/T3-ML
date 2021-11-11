@@ -3,12 +3,7 @@
     <output-path>$PROJECT_DIR$/out/artifacts/T3_ML</output-path>
     <root id="archive" name="T3-ML.jar">
       <element id="module-output" name="T3-ML" />
-      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/github/WilliamAHartman/Jamepad/1.4.0/Jamepad-1.4.0.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/uk/co/electronstudio/sdl2gdx/sdl2gdx/1.0.4/sdl2gdx-1.0.4.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/badlogicgames/gdx/gdx/1.9.9/gdx-1.9.9.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/badlogicgames/gdx/gdx-controllers/1.9.9/gdx-controllers-1.9.9.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/badlogicgames/gdx/gdx-jnigen/1.9.10/gdx-jnigen-1.9.10.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/github/javaparser/javaparser-core/2.3.0/javaparser-core-2.3.0.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/net/java/jinput/jinput/2.0.9/jinput-2.0.9.jar" path-in-jar="/" />
     </root>
   </artifact>
 </component>
