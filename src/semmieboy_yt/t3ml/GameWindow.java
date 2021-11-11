@@ -121,14 +121,16 @@ public class GameWindow extends JFrame {
         int shapeSize = squareSize - shapeMargin * 2;
         for (int i = 0; i < Main.board.length; i++) {
             switch (Main.board[i]) {
-                case Main.cross -> {
+                case Main.cross: {
                     int crossX = shapeX * squareSize + shapeMargin, crossY = shapeY * squareSize + shapeMargin;
                     graphics.drawLine(crossX, crossY, crossX + shapeSize, crossY + shapeSize);
                     graphics.drawLine(crossX + shapeSize, crossY, crossX, crossY + shapeSize);
+                    break;
                 }
-                case Main.circle -> {
+                case Main.circle: {
                     int circleX = shapeX * squareSize + shapeMargin, circleY = shapeY * squareSize + shapeMargin;
                     graphics.drawOval(circleX, circleY, shapeSize, shapeSize);
+                    break;
                 }
             }
 

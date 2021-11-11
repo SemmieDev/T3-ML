@@ -116,10 +116,12 @@ public class Main {
         if (gameOver) Brain.onGameOver();
     }
 
+    // Position to index
     public static byte pti(int x, int y) {
         return (byte)(x + y * 3);
     }
 
+    // Index to position
     public static byte[] itp(byte index) {
         byte[] pos = new byte[2];
         pos[0] = (byte)(index % 3);

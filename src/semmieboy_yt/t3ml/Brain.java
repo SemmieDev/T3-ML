@@ -6,6 +6,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -47,10 +49,10 @@ public class Brain {
 
     public static void load() {
         if (saveFile.isFile()) {
-            try (GZIPInputStream saveFileInput = new GZIPInputStream(new FileInputStream(saveFile));) {
+            try (GZIPInputStream saveFileInput = new GZIPInputStream(new FileInputStream(saveFile))) {
                 while (true) {
                     byte[] data = new byte[Memory.SIZE];
-                    if (saveFileInput.readNBytes(data, 0, data.length) == Memory.SIZE) {
+                    if (saveFileInput.read(data) == Memory.SIZE) {
                         memories.add(new Memory(data));
                     } else {
                         break;
@@ -69,9 +71,7 @@ public class Brain {
         Main.print("Thinking");
         boolean checkWin = true;
         lostMemory = null;
-        var move = new Object() {
-            public byte value = -1;
-        };
+        AtomicInteger move = new AtomicInteger(-1);
         ArrayList<Byte> possibleMoves = new ArrayList<>();
         for (byte i = 0; i < Main.board.length; i++) if (Main.board[i] == Main.none) possibleMoves.add(i);
 
@@ -79,9 +79,7 @@ public class Brain {
             Main.gameOver = true;
             Main.tie = true;
         } else {
-            var bestMemory = new Object() {
-                public Memory value = null;
-            };
+            AtomicReference<Memory> bestMemory = new AtomicReference<>();
             ArrayList<Byte> smartMoves = new ArrayList<>(possibleMoves);
             ArrayList<Memory> memories = new ArrayList<>(Brain.memories);
             memories.forEach(m -> {
@@ -90,11 +88,11 @@ public class Brain {
                     if (memory.points < 0) {
                         Main.print("Removing bad move: "+memory.move);
                         smartMoves.remove((Object)memory.move);
-                    } else if (bestMemory.value == null || memory.points > bestMemory.value.points) {
+                    } else if (bestMemory.get() == null || memory.points > bestMemory.get().points) {
                         // Don't integrate this if statement in the above if statement, or the else block will be called
                         if (Main.board[memory.move] == Main.none) {
                             Main.print("Best move so far: "+memory.move);
-                            bestMemory.value = memory;
+                            bestMemory.set(memory);
                         }
                     } else {
                         // By the time this get reached, the memory is always the worst memory
@@ -110,24 +108,24 @@ public class Brain {
                 Main.print("Trapped");
                 Main.board[possibleMoves.get(Main.random.nextInt(possibleMoves.size()))] = Main.circle;
             } else {
-                if (bestMemory.value == null) {
+                if (bestMemory.get() == null) {
                     Main.print("Don't know any good moves");
                     byte[] board = Arrays.copyOf(Main.board, Main.board.length);
-                    move.value = smartMoves.get(Main.random.nextInt(smartMoves.size()));
-                    Main.board[move.value] = Main.circle;
+                    move.set(smartMoves.get(Main.random.nextInt(smartMoves.size())));
+                    Main.board[move.get()] = Main.circle;
                     checkWin = false;
                     Main.checkWin();
 
                     if (Main.gameOver) {
                         // Game over after AI did something, so AI won
-                        Main.print("Remembering good move: "+move.value);
-                        Brain.memories.add(new Memory((byte)100, board, move.value));
+                        Main.print("Remembering good move: "+move.get());
+                        Brain.memories.add(new Memory((byte)100, board, (byte)move.get()));
                     } else {
-                        lostMemory = new Memory((byte)-100, board, move.value);
+                        lostMemory = new Memory((byte)-100, board, (byte)move.get());
                     }
                 } else {
-                    Main.print("Doing best move: "+bestMemory.value.move);
-                    Main.board[bestMemory.value.move] = Main.circle;
+                    Main.print("Doing best move: "+bestMemory.get().move);
+                    Main.board[bestMemory.get().move] = Main.circle;
                 }
             }
         }
@@ -165,14 +163,14 @@ public class Brain {
 
     private static byte rotate(byte index) {
         switch (index) {
-            case 0 -> index = 2;
-            case 1 -> index = 5;
-            case 2 -> index = 8;
-            case 3 -> index = 1;
-            case 5 -> index = 7;
-            case 6 -> index = 0;
-            case 7 -> index = 3;
-            case 8 -> index = 6;
+            case 0: return 2;
+            case 1: return 5;
+            case 2: return 8;
+            case 3: return 1;
+            case 5: return 7;
+            case 6: return 0;
+            case 7: return 3;
+            case 8: return 6;
         }
         return index;
     }
@@ -207,7 +205,10 @@ public class Brain {
 
         @Override
         public boolean equals(Object object) {
-            if (object instanceof Memory memory) return memory.points == points && Arrays.equals(memory.board, board) && memory.move == move;
+            if (object instanceof Memory) {
+                Memory memory = (Memory)object;
+                return memory.points == points && Arrays.equals(memory.board, board) && memory.move == move;
+            }
             return false;
         }
 
